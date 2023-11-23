@@ -59,6 +59,9 @@ class GeneratorDataSource(DataSource):
             'ethnicity': ethnicities,
             'productivity': productivities
         })
+        self.feature_cols = ['experience', 'skill']
+        self.sensitive_cols = ['gender', 'ethnicity']
+        self.y_col = 'productivity'
         return dataset
 
     def generate_productivity(self, experiences, skills):

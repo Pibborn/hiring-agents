@@ -13,8 +13,11 @@ if __name__ == '__main__':
     parser.add_argument('--white-perc', type=float, default=0.5, help='Percentage of white people')
     parser.add_argument('--min-prod', type=float, default=1.0, help='Minimum productivity per agent')
     parser.add_argument('--max-prod', type=float, default=10.0, help='Maximum productivity per agent')
-    parser.add_argument('--loglevel', default='INFO', help='Set the logging level',
+    parser.add_argument('--loglevel', default='WARNING', help='Set the logging level',
                         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
+    parser.add_argument('--empl-leave-prob', type=float, default=0.1, help='Probability of employee leaving')
+    parser.add_argument('--man-leave-prob', type=float, default=0.1, help='Probability of manager leaving')
+    parser.add_argument('--past-data', type=float, default=0.0, help='Proportion of data from past employees to take')
     args = parser.parse_args()
     logging.basicConfig(level=getattr(logging, args.loglevel))
     # Instantiate data source
@@ -23,8 +26,16 @@ if __name__ == '__main__':
     productivity_params = {'min': 1, 'max': 10}
     generator = GeneratorDataSource(100, gender_proportions, ethnicity_proportions, productivity_params)
     # Instantiate model
-    model = CompanyModel(args.employees, args.managers, generator)
-    for i in range(10):  # Run for 10 steps
+    model = CompanyModel(args.employees, args.managers, generator, employee_leaving_prob=args.empl_leave_prob,
+                         manager_leaving_prob=args.man_leave_prob)
+    for i in range(args.steps):  # Run for 10 steps
         model.step()
+    # Show data
+    data = model.datacollector.get_model_vars_dataframe()
+    print(data)
+    X, s, y = model.get_data_train_format(past=args.past_data, numpy=False, perceived=False)
+    print(X)
+    print(s)
+    print(y)
 
 
