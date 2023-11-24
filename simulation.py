@@ -1,7 +1,8 @@
 import argparse
 import logging
-from agents import CompanyModel
+from agents import CompanyModel, WorkerPool
 from datasources import GeneratorDataSource
+from ranking import Ranker
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simulation')
@@ -18,22 +19,24 @@ if __name__ == '__main__':
     parser.add_argument('--empl-leave-prob', type=float, default=0.1, help='Probability of employee leaving')
     parser.add_argument('--man-leave-prob', type=float, default=0.1, help='Probability of manager leaving')
     parser.add_argument('--past-data', type=float, default=0.0, help='Proportion of data from past employees to take')
+    parser.add_argument('--gap', type=int, default=1, help='After how many resignations should the hiring process trigger')
     args = parser.parse_args()
     logging.basicConfig(level=getattr(logging, args.loglevel))
     # Instantiate data source
     gender_proportions = {'male': args.male_perc, 'female': 1-args.male_perc}
     ethnicity_proportions = {'black': 1-args.white_perc, 'white': args.white_perc}
     productivity_params = {'min': 1, 'max': 10}
-    generator = GeneratorDataSource(100, gender_proportions, ethnicity_proportions, productivity_params)
+    generator = GeneratorDataSource(args.workers, gender_proportions, ethnicity_proportions, productivity_params)
     # Instantiate model
     model = CompanyModel(args.employees, args.managers, generator, employee_leaving_prob=args.empl_leave_prob,
-                         manager_leaving_prob=args.man_leave_prob)
-    for i in range(args.steps):  # Run for 10 steps
+                         manager_leaving_prob=args.man_leave_prob, gap=args.gap)
+    # Run model
+    for i in range(args.steps): 
         model.step()
     # Show data
     data = model.datacollector.get_model_vars_dataframe()
     print(data)
-    X, s, y = model.get_data_train_format(past=args.past_data, numpy=False, perceived=False)
+    X, s, y = model.ranker.get_employee_train_format(past=args.past_data, perceived=False, sensitive_attr='gender')
     print(X)
     print(s)
     print(y)
